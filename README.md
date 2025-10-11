@@ -2,6 +2,21 @@
 
 Store MQTT messages to database (via `mongodb`, `postgres` or `sqlalchemy`)
 
+## Usage
+
+### Docker 
+
+`docker run -v $PWD/.env:/.env --rm ghcr.io/celine-eu/mqtt-ingestor:latest`
+
+### python API
+
+```py
+from mqtt_ingestor.api import MqttIngestor
+
+ingestor = MqttIngestor()
+ingestor.start()
+```
+
 ## Configuration
 
 ```sh

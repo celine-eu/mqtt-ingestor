@@ -24,3 +24,6 @@ where = ["src"]
 
 [project.scripts]
 mqtt-ingestor = "mqtt_ingestor.__main__:main"
+
+[tool.uv]
+package = true
