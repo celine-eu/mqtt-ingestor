@@ -2,6 +2,20 @@ networks:
   mqtt_ingestor:
 
 services:
+  mqtt_ingestor:
+    build: .
+    image: ghcr.io/celine-eu/mqtt-ingestor:latest
+    environment:
+      - MQTT_BROKER=mqtt
+      - POSTGRES_DSN=postgresql://postgres:postgres@postgres:5432/mqtt
+      - MONGO_URI=mongodb://mongo:27017/
+    depends_on:
+      - mqtt
+      - postgres
+      - mongo
+    networks:
+      - mqtt_ingestor
+
   mqtt_init:
     image: eclipse-mosquitto:2.0
     environment:
@@ -70,16 +84,3 @@ services:
       - mqtt_ingestor
     ports:
       - 27017:27017
-
-  mqtt_collector:
-    build: .
-    environment:
-      - MQTT_BROKER=mqtt
-      - POSTGRES_DSN=postgresql://postgres:postgres@postgres:5432/mqtt
-      - MONGO_URI=mongodb://mongo:27017/
-    depends_on:
-      - mqtt
-      - postgres
-      - mongo
-    networks:
-      - mqtt_ingestor

@@ -4,10 +4,9 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.2 /uv /uvx /bin/
 
 WORKDIR /app
 
-COPY pyproject.toml uv.lock* ./
-RUN uv sync
-
 COPY . .
+
+RUN uv sync
 
 ENTRYPOINT [ "python" ]
 CMD ["-m", "mqtt_ingestor"]
