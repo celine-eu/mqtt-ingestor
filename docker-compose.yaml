@@ -1,0 +1,85 @@
+networks:
+  mqtt_ingestor:
+
+services:
+  mqtt_init:
+    image: eclipse-mosquitto:2.0
+    environment:
+      - MQTT_BROKER=mqtt
+    command: >
+      sh -c "touch /data/passwordfile && \
+      chown root:root /data/passwordfile && \
+      chmod 640 /data/passwordfile && \
+      mosquitto_passwd -b /data/passwordfile ${MQTT_USER:-mqtt_user} ${MQTT_PASS:-secretpass} && \
+      cp /config/*.conf /data"
+    volumes:
+      - ./data/mosquitto:/data
+      - ./config/mosquitto:/config
+    restart: "no"
+
+  mqtt_publisher:
+    image: eclipse-mosquitto:2.0
+    environment:
+      - MQTT_BROKER=mqtt
+      - MQTT_TOPIC=test/topic
+      - MQTT_INTERVAL=1
+    depends_on:
+      - mqtt
+    networks:
+      - mqtt_ingestor
+    command: >
+      sh -c '
+      echo "Sending every ${MQTT_INTERVAL:-1}s to ${MQTT_TOPIC:-/test} to $MQTT_USER:$MQTT_PASS@$MQTT_BROKER:$MQTT_PORT";
+      while true; do
+        mosquitto_pub -h "$MQTT_BROKER" -p "$MQTT_PORT" -u "$MQTT_USER" -P "$MQTT_PASS" \
+                      -t "${MQTT_TOPIC:-/test}" -m "{ \"hello\": \"world\" }" && echo "Sent payload";
+        sleep "${MQTT_INTERVAL:-1}";
+      done'
+
+  mqtt:
+    image: eclipse-mosquitto:2.0
+    volumes:
+      - ./data/mosquitto:/mosquitto/config
+    environment:
+      - MQTT_BROKER=mqtt
+      - TZ=Europe/Rome
+    depends_on:
+      mqtt_init:
+        condition: service_completed_successfully
+    networks:
+      - mqtt_ingestor
+    ports:
+      - 1883:1883
+
+  postgres:
+    image: postgres:17.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: mqtt
+    networks:
+      - mqtt_ingestor
+    ports:
+      - 5432:5432
+
+  mongo:
+    image: mongo
+    environment:
+      MONGO_INITDB_DATABASE: mqtt_data
+    networks:
+      - mqtt_ingestor
+    ports:
+      - 27017:27017
+
+  mqtt_collector:
+    build: .
+    environment:
+      - MQTT_BROKER=mqtt
+      - POSTGRES_DSN=postgresql://postgres:postgres@postgres:5432/mqtt
+      - MONGO_URI=mongodb://mongo:27017/
+    depends_on:
+      - mqtt
+      - postgres
+      - mongo
+    networks:
+      - mqtt_ingestor

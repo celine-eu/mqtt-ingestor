@@ -1,0 +1,26 @@
+[project]
+name = "mqtt-ingestor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "paho-mqtt>=2.1.0",
+    "psycopg2-binary>=2.9.11",
+    "pymongo>=4.15.3",
+    "python-dotenv>=1.1.1",
+    "sqlalchemy>=2.0.44",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+mqtt-ingestor = "mqtt_ingestor.__main__:main"
