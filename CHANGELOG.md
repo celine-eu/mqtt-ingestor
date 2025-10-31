@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v1.1.0 (2025-10-31)
+
+### Chores
+
+- **deps**: Bump python-dotenv from 1.1.1 to 1.2.1
+  ([`c142789`](https://github.com/celine-eu/mqtt-ingestor/commit/c142789e4a8ce13b8e7d4daeeac093799929eefa))
+
+### Continuous Integration
+
+- Bump actions/download-artifact in the actions group
+  ([`90a36f3`](https://github.com/celine-eu/mqtt-ingestor/commit/90a36f33c69c23248c95e1a6c98f1a1950c067d3))
+
+### Features
+
+- Tag latest on new tag
+  ([`4cb9336`](https://github.com/celine-eu/mqtt-ingestor/commit/4cb93368fe74ee4cdada9eb6e6642b035b5aaf59))
+
+
 ## v1.0.0 (2025-10-31)
 
 - Initial Release
