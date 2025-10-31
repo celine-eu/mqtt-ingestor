@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.1 (2025-10-31)
+
+### Bug Fixes
+
+- Add GH action permission
+  ([`e221bd2`](https://github.com/celine-eu/mqtt-ingestor/commit/e221bd25c3f2510fea1dbd9d15990b574ffba704))
+
+
 ## v1.1.0 (2025-10-31)
 
 ### Chores
