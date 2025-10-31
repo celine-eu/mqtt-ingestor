@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.2.0 (2025-10-31)
+
+### Features
+
+- Add psr versioning
+  ([`933f8cc`](https://github.com/celine-eu/mqtt-ingestor/commit/933f8cc08bf536d83fcd0b7b177fef5e327289a5))
+
+
 ## v1.1.2 (2025-10-31)
 
 ### Bug Fixes
