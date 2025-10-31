@@ -27,3 +27,8 @@ mqtt-ingestor = "mqtt_ingestor.__main__:main"
 
 [tool.uv]
 package = true
+
+[dependency-groups]
+dev = [
+    "semantic-release>=0.1.0",
+]
