@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.2 (2025-10-31)
+
+### Bug Fixes
+
+- Update pyproject
+  ([`2c56738`](https://github.com/celine-eu/mqtt-ingestor/commit/2c56738860cb31c888dd80df618798097a8db9f0))
+
+
 ## v1.1.1 (2025-10-31)
 
 ### Bug Fixes
