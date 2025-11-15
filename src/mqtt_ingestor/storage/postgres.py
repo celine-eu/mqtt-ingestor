@@ -20,11 +20,12 @@ class PostgresStorage(BaseStorage):
 
     _conn: Any = None
 
-    def __init__(self, dsn: str, table: str) -> None:
+    def __init__(self, dsn: str, table: str, schema: str = "public") -> None:
         from psycopg2 import sql
 
         self._sql = sql
 
+        self._schema = schema
         self._table = table
         self._dsn = dsn
         self._conn = None
@@ -54,6 +55,7 @@ class PostgresStorage(BaseStorage):
             cur.execute(
                 sql.SQL(
                     """
+                    CREATE SCHEMA IF NOT EXISTS {};
                     CREATE TABLE IF NOT EXISTS {} (
                         id BIGSERIAL PRIMARY KEY,
                         topic TEXT NOT NULL,
@@ -62,7 +64,10 @@ class PostgresStorage(BaseStorage):
                         created_at TIMESTAMPTZ DEFAULT now()
                     )
                     """
-                ).format(sql.Identifier(self._table))
+                ).format(
+                    sql.Identifier(self._schema),
+                    sql.Identifier(self._schema, self._table),
+                )
             )
 
     def save(self, document: DocumentPayload) -> None:
@@ -86,7 +91,7 @@ class PostgresStorage(BaseStorage):
                     INSERT INTO {} (topic, payload, ts)
                     VALUES (%s, %s, %s)
                     """
-                ).format(self._sql.Identifier(self._table)),
+                ).format(self._sql.Identifier(self._schema, self._table)),
                 (document.topic, Json(document.payload), ts),
             )
 

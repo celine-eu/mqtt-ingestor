@@ -34,12 +34,14 @@ class MqttIngestor:
             "POSTGRES_DSN", "postgresql://postgres:postgres@postgres:5432/mqtt"
         )
         self.POSTGRES_TABLE = os.getenv("POSTGRES_TABLE", "mqtt_messages")
+        self.POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA", "public")
 
         # sqlalchemy
         self.SQLALCHEMY_DSN = os.getenv(
             "SQLALCHEMY_DSN",
             "postgresql+psycopg2://postgres:postgres@postgres:5432/mqtt",
         )
+        self.SQLALCHEMY_SCHEMA = os.getenv("SQLALCHEMY_SCHEMA", "public")
         self.SQLALCHEMY_TABLE = os.getenv("SQLALCHEMY_TABLE", "mqtt_messages")
 
         # mongodb
@@ -62,7 +64,9 @@ class MqttIngestor:
                         f"{backend} backend requires env POSTGRES_DSN, POSTGRES_TABLE"
                     )
                 self.storage = postgres.PostgresStorage(
-                    dsn=self.POSTGRES_DSN, table=self.POSTGRES_TABLE
+                    dsn=self.POSTGRES_DSN,
+                    table=self.POSTGRES_TABLE,
+                    schema=self.POSTGRES_SCHEMA,
                 )
             elif "sqlalchemy" in backend:
                 if not self.SQLALCHEMY_DSN or not self.SQLALCHEMY_TABLE:
@@ -70,7 +74,9 @@ class MqttIngestor:
                         f"{backend} backend requires env SQLALCHEMY_DSN, SQLALCHEMY_TABLE"
                     )
                 self.storage = sqlalchemy.SQLAlchemyStorage(
-                    dsn=self.SQLALCHEMY_DSN, table=self.SQLALCHEMY_TABLE
+                    dsn=self.SQLALCHEMY_DSN,
+                    table=self.SQLALCHEMY_TABLE,
+                    schema=self.SQLALCHEMY_SCHEMA,
                 )
             else:
                 if not self.MONGO_URI or not self.MONGO_DB or not self.MONGO_COLLECTION:

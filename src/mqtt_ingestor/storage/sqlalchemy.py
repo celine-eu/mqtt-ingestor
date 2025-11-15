@@ -40,14 +40,18 @@ class SQLAlchemyStorage(BaseStorage):
       id | topic | payload | ts | created_at
     """
 
-    def __init__(self, dsn: str, table: str) -> None:
+    def __init__(self, dsn: str, table: str, schema: str | None = None) -> None:
         self._engine = create_engine(dsn, pool_pre_ping=True)
         self._Session = sessionmaker(bind=self._engine, expire_on_commit=False)
         self._table_name = table
+        self._schema = schema
 
         # Dynamically set table name if overridden
         if self._table_name != Message.__tablename__:
             Message.__tablename__ = self._table_name
+
+        if self._schema:
+            Message.__table__.schema = self._schema
 
         self._ensure_table()
 
