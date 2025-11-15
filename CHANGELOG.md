@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.3.0 (2025-11-15)
+
+### Features
+
+- Add schema envs
+  ([`659c651`](https://github.com/celine-eu/mqtt-ingestor/commit/659c651c3ec83e0d290dc9cc0059d749ee3cc107))
+
+
 ## v1.2.0 (2025-10-31)
 
 ### Features
