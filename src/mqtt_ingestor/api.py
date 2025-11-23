@@ -26,6 +26,7 @@ class MqttIngestor:
         self.MQTT_TRANSPORT = os.getenv("MQTT_TRANSPORT", "tcp")
         self.MQTT_TLS = os.getenv("MQTT_TLS", "0") == "1"
         self.MQTT_TOPICS = os.getenv("MQTT_TOPICS", "#")
+        self.MQTT_IGNORE_CERTS = os.getenv("MQTT_IGNORE_CERTS", "false")
 
         self.STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "postgres").strip().lower()
 
@@ -116,6 +117,7 @@ class MqttIngestor:
             mqtt_transport=self.MQTT_TRANSPORT,
             mqtt_tls=self.MQTT_TLS,
             mqtt_topics=self.MQTT_TOPICS,
+            mqtt_ignore_certs=self.MQTT_IGNORE_CERTS,
         )
 
         try:
