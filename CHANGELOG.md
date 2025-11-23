@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.4.0 (2025-11-23)
+
+### Chores
+
+- Update lock
+  ([`0327b92`](https://github.com/celine-eu/mqtt-ingestor/commit/0327b923c9abcca8cc1b3103780f2fcbc31c4e9e))
+
+### Features
+
+- Allow insecure certs on connection
+  ([`fdfa0fe`](https://github.com/celine-eu/mqtt-ingestor/commit/fdfa0fe83713e0e8c91ce94be2b8c4abbd29d1dc))
+
+
 ## v1.3.0 (2025-11-15)
 
 ### Features
