@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from mqtt_ingestor.model import DocumentCallback, DocumentPayload
 from mqtt_ingestor.logger import get_logger
 
+import ssl
+
 logger = get_logger(__name__)
 
 
@@ -57,6 +59,7 @@ def create_client(
     mqtt_transport: str | None = None,
     mqtt_tls: bool = False,
     mqtt_topics: str | None = None,
+    mqtt_ignore_certs: str | None = None,
 ):
 
     client = Client(
@@ -66,7 +69,11 @@ def create_client(
     )
 
     if mqtt_tls:
-        client.tls_set()
+        client.tls_set(
+            cert_reqs=(
+                ssl.CERT_NONE if mqtt_ignore_certs == "true" else ssl.CERT_REQUIRED
+            )
+        )
 
     if mqtt_pass and mqtt_user:
         client.username_pw_set(mqtt_user, mqtt_pass)
