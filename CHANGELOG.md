@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.4.1 (2025-11-23)
+
+### Bug Fixes
+
+- Missing api update
+  ([`7202b31`](https://github.com/celine-eu/mqtt-ingestor/commit/7202b31475daf21a50b97ce19f921a65529a5865))
+
+
 ## v1.4.0 (2025-11-23)
 
 ### Chores
