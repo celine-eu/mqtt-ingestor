@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.5.0 (2025-12-05)
+
+### Chores
+
+- Up env
+  ([`8093113`](https://github.com/celine-eu/mqtt-ingestor/commit/8093113028db0c6e57ffed36c9d8395a3eec3d1f))
+
+### Features
+
+- Add MQTT_FILTER
+  ([`84ebf27`](https://github.com/celine-eu/mqtt-ingestor/commit/84ebf27e84e9fa5c46893d380eb92251ceacf150))
+
+
 ## v1.4.1 (2025-11-23)
 
 ### Bug Fixes
