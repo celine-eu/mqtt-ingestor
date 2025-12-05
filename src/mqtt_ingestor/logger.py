@@ -12,7 +12,7 @@ import logging
 import os
 import sys
 from typing import Optional
-
+from dotenv import load_dotenv
 
 # Mapping of human-friendly log levels
 _LOG_LEVELS = {
@@ -26,9 +26,15 @@ _LOG_LEVELS = {
 
 def _configure_root_logger() -> None:
     """Configure the root logger once per process."""
+
     if logging.getLogger().handlers:
         # Already configured, do nothing
         return
+
+    load_dotenv()
+    # load local override
+    load_dotenv(".env.local", override=True)
+    load_dotenv(".env.dev", override=True)
 
     log_level_str = os.getenv("LOG_LEVEL", "INFO").upper()
     log_level = _LOG_LEVELS.get(log_level_str, logging.INFO)
