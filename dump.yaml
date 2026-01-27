@@ -1,0 +1,9 @@
+dumps:
+  - name: sources
+    contents:
+      - src
+  - name: docker
+    contents:
+      - config
+      - Dockerfile
+      - docker-compose.yaml

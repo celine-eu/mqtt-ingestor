@@ -46,7 +46,7 @@ class PostgresStorage(BaseStorage):
                     pass
 
         # reconnect
-        self._conn = psycopg2.connect(self._dsn)
+        self._conn = psycopg2.connect(self._dsn, connect_timeout=5)
         self._conn.autocommit = True
         self._create_table()
 

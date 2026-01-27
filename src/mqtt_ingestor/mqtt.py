@@ -2,6 +2,7 @@ from paho.mqtt.client import Client
 from paho.mqtt.enums import CallbackAPIVersion
 
 import json
+import uuid
 from datetime import datetime, timezone
 from mqtt_ingestor.model import DocumentCallback, DocumentPayload
 from mqtt_ingestor.logger import get_logger
@@ -62,12 +63,14 @@ def create_client(
     mqtt_ignore_certs: str | None = None,
 ):
 
+    client_id = f"mqtt-ingestor-{uuid.uuid4().hex[:8]}"
     client = Client(
         reconnect_on_failure=True,
         callback_api_version=CallbackAPIVersion.VERSION2,
         transport="websockets" if mqtt_transport == "websockets" else "tcp",
+        client_id=client_id,
     )
-
+    logger.info(f"Connecting client {client_id}")
     if mqtt_tls:
         client.tls_set(
             cert_reqs=(

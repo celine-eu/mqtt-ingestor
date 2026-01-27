@@ -1,5 +1,5 @@
 from __future__ import annotations
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import (
     create_engine,
@@ -41,7 +41,11 @@ class SQLAlchemyStorage(BaseStorage):
     """
 
     def __init__(self, dsn: str, table: str, schema: str | None = None) -> None:
-        self._engine = create_engine(dsn, pool_pre_ping=True)
+        self._engine = create_engine(
+            dsn,
+            pool_pre_ping=True,
+            connect_args={"connect_timeout": 5},
+        )
         self._Session = sessionmaker(bind=self._engine, expire_on_commit=False)
         self._table_name = table
         self._schema = schema
@@ -73,7 +77,7 @@ class SQLAlchemyStorage(BaseStorage):
         try:
             ts = datetime.fromisoformat(document.ts.replace("Z", "+00:00"))
         except Exception:
-            ts = datetime.utcnow()
+            ts = datetime.now(timezone.utc)
 
         session: Session
         with self._Session() as session:

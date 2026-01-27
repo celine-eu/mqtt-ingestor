@@ -1,5 +1,9 @@
 import os
-from mqtt_ingestor.storage import mongodb, base, postgres, sqlalchemy
+import time
+import threading
+import queue
+
+from mqtt_ingestor.storage import mongodb, base, postgres, sqlalchemy, noop
 from mqtt_ingestor.mqtt import create_client, DocumentPayload
 from mqtt_ingestor.model import DocumentPayload
 from mqtt_ingestor.logger import get_logger
@@ -13,6 +17,13 @@ class MqttIngestor:
     def __init__(self):
 
         self.logger = get_logger(__name__)
+
+        self.msg_queue = queue.Queue(maxsize=1000)  # Buffer up to 1000 messages
+        self.last_arrival_ts = time.time()  # Initialize with start time
+        self.exit_event = threading.Event()
+
+        # detect if a message has arrived within the timeout or exit
+        self.WATCHDOG_TIMEOUT = int(os.getenv("WATCHDOG_TIMEOUT", 60))
 
         self.MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt")
         self.MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
@@ -55,7 +66,10 @@ class MqttIngestor:
         self.logger.info(f"Creating {backend} storage")
 
         try:
-            if "postgre" in backend or "pg" in backend:
+
+            if "noop" in backend:
+                self.storage = noop.NoopStorage()
+            elif "postgre" in backend or "pg" in backend:
                 if not self.POSTGRES_DSN or not self.POSTGRES_TABLE:
                     raise Exception(
                         f"{backend} backend requires env POSTGRES_DSN, POSTGRES_TABLE"
@@ -91,7 +105,47 @@ class MqttIngestor:
 
         return self.storage
 
+    def _worker(self):
+        """Background thread to process database saves."""
+
+        storage = self.get_storage()
+        if not storage:
+            self.logger.error("Worker: Failed to connect to storage")
+            return
+
+        while not self.exit_event.is_set():
+            try:
+                # Block for a short time to check exit_event periodically
+                document = self.msg_queue.get(timeout=1.0)
+                storage.save(document)
+                self.logger.debug(f"Saved record from {document.topic}")
+                self.msg_queue.task_done()
+            except queue.Empty:
+                continue
+            except Exception as e:
+                self.logger.error(f"Worker: Failed to save message: {e}")
+                # If DB is down, we might want to exit to trigger container restart
+                self.exit_event.set()
+                os._exit(1)
+
+    def _watchdog(self):
+        """Monitor time since last message."""
+        while not self.exit_event.is_set():
+            time.sleep(10)
+            seconds_since_last = time.time() - self.last_arrival_ts
+
+            if seconds_since_last > self.WATCHDOG_TIMEOUT:
+                self.logger.critical(
+                    f"No messages received for {seconds_since_last:.1f}s. Exiting."
+                )
+                self.exit_event.set()
+                os._exit(1)
+
     def start(self):
+
+        # Start the decoupled worker and health monitor
+        threading.Thread(target=self._worker, daemon=True).start()
+        threading.Thread(target=self._watchdog, daemon=True).start()
 
         storage = self.get_storage()
         filter: DocumentPayloadFilter | None = (
@@ -103,6 +157,10 @@ class MqttIngestor:
             return
 
         def on_document(document: DocumentPayload):
+            # Track last message arrival
+            self.last_arrival_ts = time.time()
+            self.logger.debug(f"Got broker message")
+
             try:
                 if filter:
                     keep_document = filter(document)
@@ -112,8 +170,12 @@ class MqttIngestor:
                         )
                         return
 
-                storage.save(document)
-                self.logger.debug(f"Saved record from {document.topic}")
+                try:
+                    self.logger.debug(f"Add message to processing queue")
+                    self.msg_queue.put(document, block=False)
+                except queue.Full:
+                    self.logger.warning("Queue full, dropping message")
+
             except Exception as e:
                 self.logger.error(f"Failed to save message: {e}")
 
@@ -138,5 +200,6 @@ class MqttIngestor:
         except Exception as e:
             self.logger.error(f"Failed to connect: {e}")
         finally:
-            self.logger.info("Exit")
+            self.exit_event.set()
             storage.close()
+            self.logger.info("Exit")
