@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.6.0 (2026-01-27)
+
+### Features
+
+- Add message queue, monitor message threashold and exit if exceeded
+  ([`65b384b`](https://github.com/celine-eu/mqtt-ingestor/commit/65b384be415be8578476cf290855bb8ca9a0ba17))
+
+
 ## v1.5.0 (2025-12-05)
 
 ### Chores
