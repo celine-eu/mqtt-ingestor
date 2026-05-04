@@ -13,3 +13,4 @@ data/
 !.env.local
 # Dumpster output
 .dumpster
+mqtt_messages.jsonl
