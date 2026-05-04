@@ -60,7 +60,7 @@ def create_client(
     mqtt_transport: str | None = None,
     mqtt_tls: bool = False,
     mqtt_topics: str | None = None,
-    mqtt_ignore_certs: str | None = None,
+    mqtt_ignore_certs: bool = False,
 ):
 
     client_id = f"mqtt-ingestor-{uuid.uuid4().hex[:8]}"
@@ -74,7 +74,7 @@ def create_client(
     if mqtt_tls:
         client.tls_set(
             cert_reqs=(
-                ssl.CERT_NONE if mqtt_ignore_certs == "true" else ssl.CERT_REQUIRED
+                ssl.CERT_NONE if mqtt_ignore_certs else ssl.CERT_REQUIRED
             )
         )
 

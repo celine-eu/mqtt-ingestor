@@ -3,11 +3,12 @@ import time
 import threading
 import queue
 
-from mqtt_ingestor.storage import mongodb, base, postgres, sqlalchemy, noop
-from mqtt_ingestor.mqtt import create_client, DocumentPayload
+from mqtt_ingestor.storage import mongodb, base, postgres, sqlalchemy, noop, jsonl
+from mqtt_ingestor.mqtt import create_client
 from mqtt_ingestor.model import DocumentPayload
 from mqtt_ingestor.logger import get_logger
 from mqtt_ingestor.filter import load_filter, DocumentPayloadFilter
+from mqtt_ingestor.settings import settings
 
 
 class MqttIngestor:
@@ -22,47 +23,12 @@ class MqttIngestor:
         self.last_arrival_ts = time.time()  # Initialize with start time
         self.exit_event = threading.Event()
 
-        # detect if a message has arrived within the timeout or exit
-        self.WATCHDOG_TIMEOUT = int(os.getenv("WATCHDOG_TIMEOUT", 60))
-
-        self.MQTT_BROKER = os.getenv("MQTT_BROKER", "mqtt")
-        self.MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
-        self.MQTT_USER = os.getenv("MQTT_USER", "mqtt_user")
-        self.MQTT_PASS = os.getenv("MQTT_PASS", "secretpass")
-        self.MQTT_TRANSPORT = os.getenv("MQTT_TRANSPORT", "tcp")
-        self.MQTT_TLS = os.getenv("MQTT_TLS", "0") == "1"
-        self.MQTT_TOPICS = os.getenv("MQTT_TOPICS", "#")
-        self.MQTT_IGNORE_CERTS = os.getenv("MQTT_IGNORE_CERTS", "false")
-        self.MQTT_FILTER = os.getenv("MQTT_FILTER", None)
-
-        self.STORAGE_BACKEND = os.getenv("STORAGE_BACKEND", "postgres").strip().lower()
-
-        # postgres
-        self.POSTGRES_DSN = os.getenv(
-            "POSTGRES_DSN", "postgresql://postgres:postgres@postgres:5432/mqtt"
-        )
-        self.POSTGRES_TABLE = os.getenv("POSTGRES_TABLE", "mqtt_messages")
-        self.POSTGRES_SCHEMA = os.getenv("POSTGRES_SCHEMA", "public")
-
-        # sqlalchemy
-        self.SQLALCHEMY_DSN = os.getenv(
-            "SQLALCHEMY_DSN",
-            "postgresql+psycopg2://postgres:postgres@postgres:5432/mqtt",
-        )
-        self.SQLALCHEMY_SCHEMA = os.getenv("SQLALCHEMY_SCHEMA", "public")
-        self.SQLALCHEMY_TABLE = os.getenv("SQLALCHEMY_TABLE", "mqtt_messages")
-
-        # mongodb
-        self.MONGO_URI = os.getenv("MONGO_URI", "mongodb://mongo:27017/")
-        self.MONGO_DB = os.getenv("MONGO_DB", "mqtt_data")
-        self.MONGO_COLLECTION = os.getenv("MONGO_COLLECTION", "data")
-
     def get_storage(self) -> base.BaseStorage | None:
 
         if self.storage:
             return self.storage
 
-        backend = self.STORAGE_BACKEND
+        backend = settings.storage_backend
         self.logger.info(f"Creating {backend} storage")
 
         try:
@@ -70,34 +36,26 @@ class MqttIngestor:
             if "noop" in backend:
                 self.storage = noop.NoopStorage()
             elif "postgre" in backend or "pg" in backend:
-                if not self.POSTGRES_DSN or not self.POSTGRES_TABLE:
-                    raise Exception(
-                        f"{backend} backend requires env POSTGRES_DSN, POSTGRES_TABLE"
-                    )
                 self.storage = postgres.PostgresStorage(
-                    dsn=self.POSTGRES_DSN,
-                    table=self.POSTGRES_TABLE,
-                    schema=self.POSTGRES_SCHEMA,
+                    dsn=settings.postgres_dsn,
+                    table=settings.postgres_table,
+                    schema=settings.postgres_schema,
                 )
             elif "sqlalchemy" in backend:
-                if not self.SQLALCHEMY_DSN or not self.SQLALCHEMY_TABLE:
-                    raise Exception(
-                        f"{backend} backend requires env SQLALCHEMY_DSN, SQLALCHEMY_TABLE"
-                    )
                 self.storage = sqlalchemy.SQLAlchemyStorage(
-                    dsn=self.SQLALCHEMY_DSN,
-                    table=self.SQLALCHEMY_TABLE,
-                    schema=self.SQLALCHEMY_SCHEMA,
+                    dsn=settings.sqlalchemy_dsn,
+                    table=settings.sqlalchemy_table,
+                    schema=settings.sqlalchemy_schema,
+                )
+            elif "jsonl" in backend:
+                self.storage = jsonl.JsonlStorage(
+                    path=settings.jsonl_path,
                 )
             else:
-                if not self.MONGO_URI or not self.MONGO_DB or not self.MONGO_COLLECTION:
-                    raise Exception(
-                        f"{backend} backend requres env MONGO_URI, MONGO_DB, MONGO_COLLECTION"
-                    )
                 self.storage = mongodb.MongoStorage(
-                    mongo_uri=self.MONGO_URI,
-                    collection_name=self.MONGO_COLLECTION,
-                    db_name=self.MONGO_DB,
+                    mongo_uri=settings.mongo_uri,
+                    collection_name=settings.mongo_collection,
+                    db_name=settings.mongo_db,
                 )
         except Exception as e:
             self.logger.error(f"Connection to {backend} failed: {e}")
@@ -134,7 +92,7 @@ class MqttIngestor:
             time.sleep(10)
             seconds_since_last = time.time() - self.last_arrival_ts
 
-            if seconds_since_last > self.WATCHDOG_TIMEOUT:
+            if seconds_since_last > settings.watchdog_timeout:
                 self.logger.critical(
                     f"No messages received for {seconds_since_last:.1f}s. Exiting."
                 )
@@ -149,7 +107,7 @@ class MqttIngestor:
 
         storage = self.get_storage()
         filter: DocumentPayloadFilter | None = (
-            load_filter(self.MQTT_FILTER) if self.MQTT_FILTER else None
+            load_filter(settings.mqtt_filter) if settings.mqtt_filter else None
         )
 
         if not storage:
@@ -181,21 +139,21 @@ class MqttIngestor:
 
         client = create_client(
             on_document,
-            mqtt_user=self.MQTT_USER,
-            mqtt_pass=self.MQTT_PASS,
-            mqtt_transport=self.MQTT_TRANSPORT,
-            mqtt_tls=self.MQTT_TLS,
-            mqtt_topics=self.MQTT_TOPICS,
-            mqtt_ignore_certs=self.MQTT_IGNORE_CERTS,
+            mqtt_user=settings.mqtt_user,
+            mqtt_pass=settings.mqtt_pass,
+            mqtt_transport=settings.mqtt_transport,
+            mqtt_tls=settings.mqtt_tls,
+            mqtt_topics=settings.mqtt_topics,
+            mqtt_ignore_certs=settings.mqtt_ignore_certs,
         )
 
         try:
 
-            user = f"{self.MQTT_USER}@" if self.MQTT_USER else ""
+            user = f"{settings.mqtt_user}@" if settings.mqtt_user else ""
             self.logger.debug(
-                f"MQTT connecting to {self.MQTT_TRANSPORT}://{user}{self.MQTT_BROKER}:{self.MQTT_PORT}"
+                f"MQTT connecting to {settings.mqtt_transport}://{user}{settings.mqtt_broker}:{settings.mqtt_port}"
             )
-            client.connect(self.MQTT_BROKER, self.MQTT_PORT, keepalive=60)
+            client.connect(settings.mqtt_broker, settings.mqtt_port, keepalive=60)
             client.loop_forever()
         except Exception as e:
             self.logger.error(f"Failed to connect: {e}")
